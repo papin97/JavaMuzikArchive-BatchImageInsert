@@ -1,18 +1,18 @@
-import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.UnsupportedTagException;
+import me.tongfei.progressbar.ProgressBar;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 public class Main {
 
     public static void main(String[] args) {
-        try(Stream<Path> albums = Files.walk(Paths.get("D:\\Java Muzikarchive\\www.javanen-muziekarchief.tv"), 1)) {
+        int counter = 0;
+        try (Stream<Path> albums = Files.walk(Paths.get("D:\\Java Muzikarchive\\www.javanen-muziekarchief.tv"), 1); ProgressBar pb = new ProgressBar("Writing", 3359)) {
             albums.filter(Files::isDirectory).forEach(album -> {
                 try(Stream<Path> songs = Files.walk(Paths.get(album.toString()+"\\myjukebox_files"))) {
                     byte[] image = Files.readAllBytes(Paths.get(album.toString()+"\\artiest-groot.jpg"));
@@ -22,7 +22,12 @@ public class Main {
                         try {
                             Mp3File songmp3 = new Mp3File(song.toString());
                             songmp3.getId3v2Tag().setAlbumImage(image, "image/jpeg");
-                            //save the mp3 here
+                            songmp3.save(song.toAbsolutePath().toString() + ".new");
+                            Path newSong = Paths.get(song.toAbsolutePath().toString() + ".new");
+                            Files.move(newSong, song, StandardCopyOption.REPLACE_EXISTING);
+                            if (!Files.exists(newSong) && Files.exists(song)) {
+                                pb.step();
+                            }
                         } catch (Exception e){
                             e.printStackTrace();
                         }
